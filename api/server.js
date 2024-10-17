@@ -1,5 +1,11 @@
-const express = require('express');
+const express = require("express");
+const actionsRouter = require("./actions/actions-router");
+const projectsRouter = require("./projects/projects-router");
+
 const server = express();
+
+server.use("/api/actions/actions-router.js", actionsRouter);
+server.use("/api/projects/projects-router.js", projectsRouter);
 
 // Configure your server here
 // Build your actions router in /api/actions/actions-router.js

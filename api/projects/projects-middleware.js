@@ -17,7 +17,6 @@ async function checkId(req, res, next) {
   try {
     const { id } = req.params;
     const project = await Projects.getById(id);
-    console.log(project);
     if (project) {
       next();
     } else {

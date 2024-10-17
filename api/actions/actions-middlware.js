@@ -1,11 +1,11 @@
 const Actions = require("./actions-model");
+const Projects = require("../projects/projects-model");
 
-async function checkId(req, res, next) {
+async function checkActionId(req, res, next) {
   try {
     const { id } = req.params;
-    const action = await Actions.getById(id);
-    console.log(action);
-    if (action) {
+    const actions = await Actions.getById(id);
+    if (actions) {
       next();
     } else {
       next({
@@ -18,4 +18,30 @@ async function checkId(req, res, next) {
   }
 }
 
-module.exports = { checkId };
+async function checkBody(req, res, next) {
+  try {
+    const body = req.body;
+    if (
+      !body.description ||
+      !body.notes ||
+      typeof body.project_id !== "number" ||
+      typeof body.completed !== "number"
+    ) {
+      next({ status: 400, message: "Invalid request body." });
+    }
+    const { id } = body.project_id;
+    const project = await Projects.getById(id);
+    if (project) {
+      next();
+    } else {
+      next({
+        status: 404,
+        message: `Project with the given id not found.`,
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { checkActionId, checkBody };

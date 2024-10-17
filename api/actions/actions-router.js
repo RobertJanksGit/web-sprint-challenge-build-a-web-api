@@ -1,6 +1,6 @@
 const express = require("express");
 const Actions = require("./actions-model");
-const { checkId } = require("./actions-middlware");
+const { checkActionId, checkBody } = require("./actions-middlware");
 
 const router = express.Router();
 router.get("/", async (req, res, next) => {
@@ -12,11 +12,46 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.get("/:id", checkId, async (req, res, next) => {
+router.get("/:id", [checkActionId, checkBody], async (req, res, next) => {
   try {
     const { id } = req.params;
-    req.body = await Actions.getById(id);
-    res.status(200).json(req.body);
+    const updatedAction = await Actions.getById(id, req.body);
+    res.status(200).json(updatedAction);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/", checkBody, async (req, res, next) => {
+  try {
+    const action = await Actions.insert(req.body);
+    res.status(200).json(action);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put("/:id", [checkActionId, checkBody], async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updatedAction = await Actions.update(id, req.body);
+    res.status(200).json(updatedAction);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.use((err, req, res, next) => {
+  res.status(err.status || 500).json({
+    message: err.message,
+  });
+});
+
+router.delete("/:id", checkActionId, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await Actions.remove(id);
+    res.status(200).json();
   } catch (err) {
     next(err);
   }

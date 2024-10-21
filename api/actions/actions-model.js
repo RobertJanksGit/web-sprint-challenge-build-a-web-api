@@ -4,22 +4,12 @@ const mappers = require("../../data/helpers/mappers");
 
 module.exports = {
   get,
-  getById,
   insert,
   update,
   remove,
 };
 
-async function get() {
-  const actions = await db("actions");
-
-  return actions.map((action) => ({
-    ...action,
-    completed: action.completed === 1,
-  }));
-}
-
-function getById(id) {
+function get(id) {
   let query = db("actions");
 
   if (id) {
@@ -41,20 +31,16 @@ function getById(id) {
 }
 
 function insert(action) {
-  action.completed = action.completed === 1;
   return db("actions")
     .insert(action)
-    .then(([id]) => getById(id));
+    .then(([id]) => get(id));
 }
 
 function update(id, changes) {
-  if (changes.completed !== undefined) {
-    changes.completed = changes.completed === 1;
-  }
   return db("actions")
     .where("id", id)
     .update(changes)
-    .then((count) => (count > 0 ? getById(id) : null));
+    .then((count) => (count > 0 ? get(id) : null));
 }
 
 function remove(id) {

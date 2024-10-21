@@ -1,51 +1,23 @@
-const Projects = require("./projects-model");
+// add middlewares here related to projects
 
-function convertToNumber(val) {
-  if (typeof val === "boolean") {
-    return +val;
+async function missingParts(req, res, next) {
+  const { body } = req;
+  console.log(body);
+  if (!body.name || !body.description) {
+    res.status(400).send("Unauthorized");
   } else {
-    return val;
+    res.status(200);
+    next();
   }
 }
 
-async function checkProjects(req, res, next) {
-  try {
-    const projects = await Projects.get();
-    if (projects) {
-      next();
-    } else {
-      next({ statusbar: 404, message: "No projects found." });
-    }
-  } catch (err) {
-    next(err);
+async function missingParts2(req, res, next) {
+  const { body } = req;
+  console.log(body.completed);
+  if (!body.name || !body.description || body.completed === undefined) {
+    res.status(400).send("Unauthorized");
+  } else {
+    next();
   }
 }
-
-async function checkId(req, res, next) {
-  try {
-    const { id } = req.params;
-    const project = await Projects.getById(id);
-    if (project) {
-      next();
-    } else {
-      next({
-        status: 404,
-        message: `Project with the given id not found.`,
-      });
-    }
-  } catch (err) {
-    next(err);
-  }
-}
-
-function checkBody(req, res, next) {
-  const { name, description, completed } = req.body;
-  const convertedCompleted = convertToNumber(completed);
-  if (!name || !description || typeof convertedCompleted !== "number") {
-    return res.status(400).json({ message: "Missing required fields" });
-  }
-  res.body = req.body;
-  next();
-}
-
-module.exports = { checkProjects, checkId, checkBody };
+module.exports = { missingParts, missingParts2 };

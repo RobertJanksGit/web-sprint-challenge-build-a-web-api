@@ -1,94 +1,94 @@
-// Write your "projects" router here!
 const express = require("express");
-const {
-  get,
-  insert,
-  update,
-  remove,
-  getProjectActions,
-} = require("./projects-model");
-const server = express();
-const { missingParts, missingParts2 } = require("./projects-middleware");
-server.use(express.json());
+const Projects = require("./projects-model");
+const { checkProjects, checkId, checkBody } = require("./projects-middleware");
 
-server.get("/", async (req, res) => {
+const router = express.Router();
+
+// Normalize "completed" field
+const normalizeCompleted = (project) => ({
+  ...project,
+  completed: Boolean(project.completed),
+});
+
+// GET all projects
+router.get("/", checkProjects, async (req, res, next) => {
   try {
-    const projects = await get();
-    if (!projects) {
-      res.status(404).send([]);
-    } else {
-      res.status(200).json(projects);
-    }
+    let projects = await Projects.get();
+    projects = projects.map(normalizeCompleted);
+    res.status(200).json(projects);
   } catch (err) {
-    res.status(500).json({ status: "Not found" });
+    next(err);
   }
 });
 
-server.get("/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const projects = await get(id);
-    if (!projects) {
-      res.status(404).send();
-    } else {
-      res.status(200).json(projects);
-    }
-  } catch (err) {
-    res.status(500).json({ status: "Not found" });
-  }
-});
-server.post("/", missingParts, async (req, res) => {
-  try {
-    const { body } = req;
-    const projects = await insert(body);
-    if (!projects) {
-      res.status(400).send();
-    } else {
-      res.status(200).json(projects);
-    }
-  } catch (err) {
-    res.status(500).json({ status: "Not found" });
-  }
-});
-server.put("/:id", missingParts2, async (req, res) => {
+// GET a project by ID
+router.get("/:id", checkId, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { body } = req;
-    const projects = await update(id, body);
-    if (!projects) {
-      res.status(400).send();
+    const project = await Projects.getById(id);
+    console.log(project);
+    if (project) {
+      res.status(200).json(normalizeCompleted(project));
     } else {
-      res.status(200).json(projects);
+      res.status(404).json({ message: "Project not found" });
     }
   } catch (err) {
-    res.status(500).json({ status: "Not found" });
-  }
-});
-server.delete("/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const projects = await remove(id);
-    if (!projects) {
-      res.status(404).send();
-    } else {
-      res.status(200).json(projects);
-    }
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-server.get("/:id/actions", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const projects = await getProjectActions(id);
-    if (!projects) {
-      res.status(404).send();
-    } else {
-      res.status(200).json(projects);
-    }
-  } catch (err) {
-    res.status(500).json({ status: "Not found" });
+    next(err);
   }
 });
 
-module.exports = server;
+// POST a new project
+router.post("/", checkBody, async (req, res, next) => {
+  try {
+    let project = await Projects.insert(req.body);
+    project = normalizeCompleted(project);
+    res.status(201).json(project);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT (update) a project
+router.put("/:id", [checkId, checkBody], async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    let updatedProject = await Projects.update(id, req.body);
+    updatedProject = normalizeCompleted(updatedProject);
+    res.status(200).json(updatedProject);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE a project
+router.delete("/:id", checkId, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await Projects.remove(id);
+    res
+      .status(200)
+      .json({ message: `Project with ID ${id} deleted successfully` });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET all actions for a project
+router.get("/:id/actions", checkId, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const actions = await Projects.getProjectActions(id);
+    res.status(200).json(actions);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Global error handling middleware
+router.use((err, req, res, next) => {
+  res.status(err.status || 500).json({
+    message: err.message,
+  });
+});
+
+module.exports = router;

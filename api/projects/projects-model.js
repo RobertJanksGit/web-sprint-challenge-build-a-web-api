@@ -11,8 +11,13 @@ module.exports = {
   getProjectActions,
 };
 
-function get() {
-  return db("projects");
+async function get() {
+  const projects = await db("projects");
+
+  return projects.map((project) => ({
+    ...project,
+    completed: project.completed === 1,
+  }));
 }
 
 function getById(id) {

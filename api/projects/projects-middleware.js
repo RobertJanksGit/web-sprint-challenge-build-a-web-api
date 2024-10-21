@@ -1,5 +1,13 @@
 const Projects = require("./projects-model");
 
+function convertToNumber(val) {
+  if (typeof val === "boolean") {
+    return +val;
+  } else {
+    return val;
+  }
+}
+
 async function checkProjects(req, res, next) {
   try {
     const projects = await Projects.get();
@@ -30,18 +38,14 @@ async function checkId(req, res, next) {
   }
 }
 
-async function checkBody(req, res, next) {
-  try {
-    const body = req.body;
-    console.log(body.name);
-    if (body.name && body.description && typeof body.completed === "number") {
-      next();
-    } else {
-      next({ status: 400, message: "Invalid request body." });
-    }
-  } catch (err) {
-    next(err);
+function checkBody(req, res, next) {
+  const { name, description, completed } = req.body;
+  const convertedCompleted = convertToNumber(completed);
+  if (!name || !description || typeof convertedCompleted !== "number") {
+    return res.status(400).json({ message: "Missing required fields" });
   }
+  res.body = req.body;
+  next();
 }
 
 module.exports = { checkProjects, checkId, checkBody };

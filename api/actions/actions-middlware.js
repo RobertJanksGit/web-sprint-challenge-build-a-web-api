@@ -1,6 +1,14 @@
 const Actions = require("./actions-model");
 const Projects = require("../projects/projects-model");
 
+function convertToNumber(val) {
+  if (typeof val === "boolean") {
+    return +val;
+  } else {
+    return val;
+  }
+}
+
 async function checkActionId(req, res, next) {
   try {
     const { id } = req.params;
@@ -20,16 +28,17 @@ async function checkActionId(req, res, next) {
 
 async function checkBody(req, res, next) {
   try {
-    const body = req.body;
+    const { notes, description, project_id, completed } = req.body;
+    const convertedCompleted = convertToNumber(completed);
     if (
-      !body.description ||
-      !body.notes ||
-      typeof body.project_id !== "number" ||
-      typeof body.completed !== "number"
+      !description ||
+      !notes ||
+      typeof project_id !== "number" ||
+      typeof convertedCompleted !== "number"
     ) {
       next({ status: 400, message: "Invalid request body." });
     }
-    const { id } = body.project_id;
+    const { id } = project_id;
     const project = await Projects.getById(id);
     if (project) {
       next();

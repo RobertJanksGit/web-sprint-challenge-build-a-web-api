@@ -10,8 +10,13 @@ module.exports = {
   remove,
 };
 
-function get() {
-  return db("actions");
+async function get() {
+  const actions = await db("actions");
+
+  return actions.map((action) => ({
+    ...action,
+    completed: action.completed === 1,
+  }));
 }
 
 function getById(id) {
@@ -36,12 +41,16 @@ function getById(id) {
 }
 
 function insert(action) {
+  action.completed = action.completed === 1;
   return db("actions")
     .insert(action)
     .then(([id]) => getById(id));
 }
 
 function update(id, changes) {
+  if (changes.completed !== undefined) {
+    changes.completed = changes.completed === 1;
+  }
   return db("actions")
     .where("id", id)
     .update(changes)
